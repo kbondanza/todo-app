@@ -6,6 +6,7 @@ import {
   useRecoilState,
   selector,
 } from "recoil";
+import styled from "styled-components";
 
 // Atoms contain the source of truth for application state
 // https://recoiljs.org/docs/basic-tutorial/atoms
@@ -23,7 +24,7 @@ function TodoItemCreator() {
   const [inputValue, setInputValue] = useState("");
   const setTodoList = useSetRecoilState(todoListState);
   const addItem = () => {
-    setTodoList((oldTodoList) => [
+    setTodoList((oldTodoList: string[]) => [
       ...oldTodoList,
       {
         id: getId(),
@@ -46,11 +47,11 @@ function TodoItemCreator() {
   );
 }
 
-function replaceItemAtIndex(arr, index, newValue) {
+function replaceItemAtIndex(arr: string[], index: number, newValue: string) {
   return [...arr.slice(0, index), newValue, ...arr.slice(index + 1)];
 }
 
-function removeItemAtIndex(arr, index) {
+function removeItemAtIndex(arr: string[], index: number) {
   return [...arr.slice(0, index), ...arr.slice(index + 1)];
 }
 
@@ -114,9 +115,9 @@ const filteredTodoListState = selector({
 
     switch (filter) {
       case "Show Completed":
-        return list.filter((item) => item.isComplete);
+        return list.filter((item: { isComplete: boolean }) => item.isComplete);
       case "Show Uncompleted":
-        return list.filter((item) => !item.isComplete);
+        return list.filter((item: { isComplete: boolean }) => !item.isComplete);
       default:
         return list;
     }
@@ -147,7 +148,9 @@ const todoListStatsState = selector({
   get: ({ get }) => {
     const todoList = get(filteredTodoListState);
     const totalNum = todoList.length;
-    const totalCompletedNum = todoList.filter((item) => item.isComplete).length;
+    const totalCompletedNum = todoList.filter(
+      (item: { isComplete: boolean }) => item.isComplete
+    ).length;
     const totalUncompletedNum = totalNum - totalCompletedNum;
     const percentCompleted = totalNum === 0 ? 0 : totalCompletedNum / totalNum;
 
@@ -190,7 +193,7 @@ function TodoList() {
       <TodoListStats />
       <TodoListFilters />
       <TodoItemCreator />
-      {todoList.map((todoItem) => (
+      {todoList.map((todoItem: any[]) => (
         <TodoItem key={todoItem.id} item={todoItem} />
       ))}
     </>
