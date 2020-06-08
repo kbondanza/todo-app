@@ -7,6 +7,74 @@ import {
   selector,
 } from "recoil";
 import styled from "styled-components";
+import { compose, flexbox, grid, space, layout, color } from "styled-system";
+
+const Box = styled("div")(compose(flexbox, grid, space, layout, color));
+
+const InputWrap = styled(Box)`
+  border-bottom: 1px solid blue;
+`;
+
+const Input = styled(Box)`
+  -webkit-appearance: none;
+  border: 0;
+  &:focus {
+    outline: 0;
+  }
+`;
+
+const Button = styled(Box)`
+  -webkit-appearance: none;
+  border: 0;
+  cursor: pointer;
+  border: 1px solid;
+  border-radius: 50vw;
+  &:hover,
+  &:focus {
+    transform: translateY(-1px);
+    box-shadow: 0 0 4px blue;
+  }
+  &:focus {
+    outline: 0;
+  }
+`;
+
+const IconButton = styled(Box)`
+  -webkit-appearance: none;
+  border: 0;
+  cursor: pointer;
+`;
+
+const Checkbox = styled(Box)`
+  -webkit-appearance: none;
+  border: 1px solid red;
+  height: 16px;
+  width: 16px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  &::after {
+    content: "\\2713";
+    position: absolute;
+    text-align: center;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    color: #fff;
+  }
+  &:focus {
+    outline: 0;
+    box-shadow: 0 0 1px blue, 0 0 4px blue;
+  }
+  &:checked {
+    background: red;
+    &::after {
+      opacity: 1;
+    }
+  }
+`;
 
 // Atoms contain the source of truth for application state
 // https://recoiljs.org/docs/basic-tutorial/atoms
@@ -35,15 +103,29 @@ function TodoItemCreator() {
     setInputValue("");
   };
 
-  const onChange = ({ target: { value } }) => {
-    setInputValue(value);
+  const onChange = (event: any) => {
+    setInputValue(event.target.value);
+  };
+
+  const onKeyPress = (event: any) => {
+    if (event.key === "Enter") {
+      addItem();
+    }
   };
 
   return (
-    <div>
-      <input type="text" value={inputValue} onChange={onChange} />
-      <button onClick={addItem}>Add</button>
-    </div>
+    <InputWrap mb={3} p={1}>
+      <label>
+        <Input
+          as="input"
+          placeholder="Create a new task"
+          type="text"
+          value={inputValue}
+          onChange={onChange}
+          onKeyPress={onKeyPress}
+        />
+      </label>
+    </InputWrap>
   );
 }
 
@@ -84,21 +166,30 @@ function TodoItem({ item }) {
   };
 
   return (
-    <div>
-      <input type="text" value={item.text} onChange={editItemText} />
-      <input
+    <InputWrap my={2}>
+      <Checkbox
+        as="input"
         type="checkbox"
         checked={item.isComplete}
         onChange={toggleItemCompletion}
       />
-      <button onClick={deleteItem}>X</button>
-    </div>
+      <Input
+        ml={1}
+        as="input"
+        type="text"
+        value={item.text}
+        onChange={editItemText}
+      />
+      <IconButton as="button" onClick={deleteItem}>
+        X
+      </IconButton>
+    </InputWrap>
   );
 }
 
 const todoListFilterState = atom({
   key: "todoListFilterState",
-  default: "Show All",
+  default: "all",
 });
 
 // a selector represents a piece of derived state
@@ -114,9 +205,9 @@ const filteredTodoListState = selector({
     const list = get(todoListState);
 
     switch (filter) {
-      case "Show Completed":
+      case "completed":
         return list.filter((item: { isComplete: boolean }) => item.isComplete);
-      case "Show Uncompleted":
+      case "active":
         return list.filter((item: { isComplete: boolean }) => !item.isComplete);
       default:
         return list;
@@ -125,21 +216,32 @@ const filteredTodoListState = selector({
 });
 
 function TodoListFilters() {
-  const [filter, setFilter] = useRecoilState(todoListFilterState);
-
-  const updateFilter = ({ target: { value } }) => {
-    setFilter(value);
-  };
+  const [, setFilter] = useRecoilState(todoListFilterState);
 
   return (
-    <>
-      Filter:
-      <select value={filter} onChange={updateFilter}>
-        <option value="Show All">All</option>
-        <option value="Show Completed">Completed</option>
-        <option value="Show Uncompleted">Show Uncompleted</option>
-      </select>
-    </>
+    <Box>
+      <Button m={1} as="button" type="button" onClick={() => setFilter("all")}>
+        All
+      </Button>
+      <Button
+        m={1}
+        as="button"
+        type="button"
+        onClick={() => setFilter("completed")}
+        value="completed"
+      >
+        Completed
+      </Button>
+      <Button
+        m={1}
+        as="button"
+        type="button"
+        onClick={() => setFilter("active")}
+        value="active"
+      >
+        Active
+      </Button>
+    </Box>
   );
 }
 
@@ -164,39 +266,31 @@ const todoListStatsState = selector({
 });
 
 function TodoListStats() {
-  const {
-    totalNum,
-    totalCompletedNum,
-    totalUncompletedNum,
-    percentCompleted,
-  } = useRecoilValue(todoListStatsState);
+  const { percentCompleted } = useRecoilValue(todoListStatsState);
 
   const formattedPercentCompleted = Math.round(percentCompleted * 100);
 
-  return (
-    <ul>
-      <li>Total items: {totalNum}</li>
-      <li>Items completed: {totalCompletedNum}</li>
-      <li>Items not completed: {totalUncompletedNum}</li>
-      <li>Percent completed: {formattedPercentCompleted}</li>
-    </ul>
-  );
+  return <span>Percent completed: {formattedPercentCompleted}</span>;
 }
 
 function TodoList() {
   // to read the contents of an atom, the useRecoilValue hook is used
   const todoList = useRecoilValue(filteredTodoListState);
 
-  console.error({ todoList });
   return (
-    <>
-      <TodoListStats />
-      <TodoListFilters />
+    <Box display="grid" justifyItems="center" alignItems="center">
+      <h1>My Tasks</h1>
       <TodoItemCreator />
       {todoList.map((todoItem: any[]) => (
         <TodoItem key={todoItem.id} item={todoItem} />
       ))}
-    </>
+      {todoList.length > 0 && (
+        <Box display="flex" p={1} alignItems="center">
+          <TodoListStats />
+          <TodoListFilters />
+        </Box>
+      )}
+    </Box>
   );
 }
 
